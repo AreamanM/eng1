@@ -2,55 +2,64 @@ package io.github.unisim;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter implements InputProcessor {
     private SpriteBatch batch;
-    private Texture image;
-    private Texture accom;
-    private int mouseX;
-    private int mouseY;
+    private Texture mapTexture;
+    private BuildingManager buildingManager;
+    private int mouseX, mouseY;
 
     @Override
     public void create() {
         Gdx.input.setInputProcessor(this);
         batch = new SpriteBatch();
-        image = new Texture("map.jpg");
-        accom = new Texture("accom.jpg");
-        mouseX = -1;
-        mouseY = -1;
+        mapTexture = new Texture("map.jpg");
+        buildingManager = new BuildingManager();
     }
 
     @Override
     public void render() {
         ScreenUtils.clear(Color.BLUE);
         batch.begin();
-        batch.draw(image, 0, 0);
-        if (mouseX >= 0 && mouseY >= 0) {
-            batch.draw(accom, mouseX, mouseY);
-        }
+        batch.draw(mapTexture, 0, 0); // Drawing the png map
+        buildingManager.render(batch); // Draw all buildings
         batch.end();
-}
+    }
 
     @Override
     public void dispose() {
         batch.dispose();
-        image.dispose();
+        mapTexture.dispose();
+        buildingManager.dispose();
     }
 
-    // InputProcessor
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         mouseX = screenX;
-        // flip y because opengl
-        mouseY = Gdx.graphics.getHeight() - screenY;
-        return true; // Returning true means the event was handled
+        mouseY = Gdx.graphics.getHeight() - screenY; // Flip the Y-axis coordinates
+
+        if (button == Input.Buttons.LEFT) { // Left click to place the building
+            if (!buildingManager.isAllBuildingsPlaced()) { // Check if there are any unplaced buildings
+                Building newBuilding = buildingManager.createBuilding(mouseX, mouseY);
+                if (newBuilding != null) { // Building created successfully
+                    buildingManager.addBuilding(newBuilding);
+                }
+            }
+        } else if (button == Input.Buttons.RIGHT) { // Right click to delete the building
+            Building buildingToRemove = buildingManager.getBuildingAt(mouseX, mouseY);
+            if (buildingToRemove != null) {
+                buildingManager.removeBuilding(buildingToRemove);
+            }
+        }
+        return true;
     }
+
 
     @Override public boolean keyDown(int keycode) { return false; }
     @Override public boolean keyUp(int keycode) { return false; }
@@ -60,5 +69,4 @@ public class Main extends ApplicationAdapter implements InputProcessor {
     @Override public boolean touchCancelled(int a, int b, int c, int d) { return false; }
     @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
     @Override public boolean scrolled(float amountX, float amountY) { return false; }
-
 }
